@@ -191,11 +191,29 @@ app.post("/send", async (req, res) => {
         Grund: req.body.Grund,
         Text: req.body.Text}, null, "\t");
 
-    let msg_content = "Montageplatz: " + JSON.stringify(req.body.Montageplatz) + "\n" +
-    "Auftrag: " + JSON.stringify(req.body.Auftrag) + "\n" +
-    "Baugruppe: " + JSON.stringify(req.body.Baugruppe) + "\n" +
-    "Grund: " + JSON.stringify(req.body.Grund) + "\n" +
-    "Text: " + JSON.stringify(req.body.Text);
+    let msg_content = "";
+
+    if (settings.Einleitungstext != undefined)
+    {
+        if (settings.Einleitungstext != "")
+        {
+            msg_content = settings.Einleitungstext + "\n\n";
+        }
+    }
+
+    msg_content += "Montageplatz: " + JSON.stringify(req.body.Montageplatz) + "\n" +
+        "Auftrag: " + JSON.stringify(req.body.Auftrag) + "\n" +
+        "Baugruppe: " + JSON.stringify(req.body.Baugruppe) + "\n" +
+        "Grund: " + JSON.stringify(req.body.Grund) + "\n" +
+        "Text: " + JSON.stringify(req.body.Text);
+
+    if (settings.Hinweistext != undefined)
+    {
+        if (settings.Hinweistext != "")
+        {
+            msg_content += "\n\n" + settings.Hinweistext;
+        }
+    }
 
     msg_content = msg_content.replaceAll('"', '');
     
