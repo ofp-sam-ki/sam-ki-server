@@ -6,5 +6,7 @@
         "user":"user",
         "pass":"pass"
     },
-    "from":"noreply@testsender.de"
+    "from":"noreply@testsender.de",
+    "Einleitungstext": "Es wurde eine neue Meldung für Sie über SAM-KI-Nachricht generiert:",
+    "Hinweistext": "Rückmeldung bitte an Max Mustermann (max.mustermann@musterfirma.de)."
 }
