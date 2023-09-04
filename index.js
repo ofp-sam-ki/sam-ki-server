@@ -83,6 +83,38 @@ app.get('/Modelle', async (req, res) => {
     }
 });
 
+app.get('/Meldungen/:Meldung', async (req, res) => {
+    console.log("GET " + req.url);
+    try {
+        if (req.params.Meldung.indexOf('..') != -1) {
+            console.log("Meldung not found");
+            res.status(404).send(err);
+        }
+        console.log("OK");
+        res.status(200).send(fs.readFileSync("meldungen/" + req.params.Meldung + ".json"));
+    } catch (err) {
+        console.error(err);
+        res.status(500).send(err);
+    }
+});
+
+app.get('/Meldungen_Liste/:Montageplatz', async (req, res) => {
+    console.log("GET " + req.url);
+    if (req.params.Montageplatz = "") res.status(404).send(err);
+
+    try {
+        const files = fs.readdirSync("meldungen");
+        const matchingFiles = files.filter(file => file.startsWith(req.params.Montageplatz) && file.endsWith(".json"));
+        const removedStrings = matchingFiles.map(str => str.slice(0, -5));
+
+        console.log("OK");
+        res.status(200).send(removedStrings);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send(err);
+    }   
+});
+
 app.get('/testmail', async (req, res) => {
     console.log("GET /testmail");
     var settings = JSON.parse(fs.readFileSync("Mail.json"));
