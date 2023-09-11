@@ -100,7 +100,7 @@ app.get('/Meldungen/:Meldung', async (req, res) => {
 
 app.get('/Meldungen_Liste/:Montageplatz', async (req, res) => {
     console.log("GET " + req.url);
-    if (req.params.Montageplatz = "") res.status(404).send(err);
+    if (req.params.Montageplatz == "") res.status(404).send(err);
 
     try {
         const files = fs.readdirSync("meldungen");
