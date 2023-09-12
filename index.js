@@ -154,7 +154,8 @@ app.get('/Meldungen/Auswertung/:Montageplatz', async (req, res) => {
     //res.status(200).send(csv_output);
 
     const options = {
-        root: path.join(__dirname)
+        //root: path.join(__dirname)
+		root: "."
     };
 
     res.sendFile(filename, options, function (err) {
