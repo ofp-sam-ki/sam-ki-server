@@ -159,7 +159,7 @@ app.get('/Meldungen/Auswertung/:Montageplatz', async (req, res) => {
 
     res.sendFile(filename, options, function (err) {
         if (err) {
-            next(err);
+            console.error(err);
         } else {
             console.log('Sent:', filename);
         }
