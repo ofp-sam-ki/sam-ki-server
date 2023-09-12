@@ -1,5 +1,7 @@
 #!/usr/bin / env node
 
+const path = require('path');
+
 const express = require('express');
 const app = express();
 
@@ -96,6 +98,72 @@ app.get('/Meldungen/:Meldung', async (req, res) => {
         console.error(err);
         res.status(500).send(err);
     }
+});
+
+app.get('/Meldungen/Auswertung/:Montageplatz', async (req, res) => {
+    console.log("GET " + req.url);
+    if (req.params.Montageplatz == "" ) res.status(500).send(err);
+
+    const files = fs.readdirSync("meldungen");
+
+    var matchingFiles = null;
+    if (req.params.Montageplatz == "alle")
+    {
+        matchingFiles = files.filter(file => file.endsWith(".json"));
+    } else {
+        matchingFiles = files.filter(file => file.startsWith(req.params.Montageplatz) && file.endsWith(".json"));
+    }
+
+    var csv_output = "Zeitstempel;Abteilungen;Montageplatz;Auftrag;Baugruppe;Grund;Text\n";
+
+    for (const file of matchingFiles)
+    {
+        console.log(file);
+        try {
+            var obj = JSON.parse(fs.readFileSync("meldungen/" + file));
+            obj.Auftrag = obj.Auftrag.replace('\r\n', '   ');
+            obj.Auftrag = obj.Auftrag.replace('\n', '   ');
+            obj.Auftrag = obj.Auftrag.replace('\t', '   ');
+        
+            obj.Baugruppe = obj.Baugruppe.replace('\r\n', '   ');
+            obj.Baugruppe = obj.Baugruppe.replace('\n', '   ');
+            obj.Baugruppe = obj.Baugruppe.replace('\t', '   ');
+            
+            obj.Text = obj.Text.replace('\r\n', '   ');
+            obj.Text = obj.Text.replace('\n', '   ');
+            obj.Text = obj.Text.replace('\t', '   ');
+            csv_output += new Date(obj.Zeitstempel).toLocaleDateString("de-DE") + ";" + obj.Abteilungen + ";" + obj.Montageplatz + ";" + obj.Auftrag + ";" + obj.Baugruppe + ";" + obj.Grund + ";" + obj.Text + "\n";
+        } catch {
+            
+        }
+    }
+
+    var filename = "";
+
+    if (req.params.Montageplatz == "alle")
+    {
+        filename = "Auswertung.csv";
+    } else {
+        filename = req.params.Montageplatz + ".csv";
+    }
+    
+    fs.writeFileSync(filename, csv_output);
+
+    console.log("OK");
+    //res.contentType("file/csv");
+    //res.status(200).send(csv_output);
+
+    const options = {
+        root: path.join(__dirname)
+    };
+
+    res.sendFile(filename, options, function (err) {
+        if (err) {
+            next(err);
+        } else {
+            console.log('Sent:', filename);
+        }
+    });
 });
 
 app.get('/Meldungen_Liste/:Montageplatz', async (req, res) => {
