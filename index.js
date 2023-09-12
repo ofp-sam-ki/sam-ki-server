@@ -39,7 +39,7 @@ const port = process.env.PORT || 4000;
 app.listen(port, () => {
     console.log('Server für SAM-KI-Assistenz');
     console.log("(c)2023 David Breunig, Fraunhofer IPA");
-    console.log("Beta v0.1.3");
+    console.log("Beta v0.1.4");
     console.log(`Host-Id: ${hostid}`);
     console.log(`Listener auf ${port}`);
     console.log('PORT als Umgebungsvariable für anderen Port');
