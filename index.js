@@ -93,7 +93,16 @@ app.get('/Meldungen/:Meldung', async (req, res) => {
             res.status(404).send(err);
         }
         console.log("OK");
-        res.status(200).send(fs.readFileSync("meldungen/" + req.params.Meldung + ".json"));
+
+        var meldung = JSON.parse(fs.readFileSync("meldungen/" + req.params.Meldung + ".json"));
+
+        const files = fs.readdirSync("meldungen");
+        const matchingFiles = files.filter(file => file.startsWith(req.params.Meldung) && file.endsWith(".jpeg"));
+        const removedStrings = matchingFiles.map(str => str.slice(0, -5));
+
+        meldung.images = removedStrings;
+
+        res.status(200).send(meldung);
     } catch (err) {
         console.error(err);
         res.status(500).send(err);
@@ -183,6 +192,43 @@ app.get('/Meldungen_Liste/:Montageplatz', async (req, res) => {
         res.status(500).send(err);
     }   
 });
+
+app.get('/Fotos/:foto', async (req, res) => {
+    console.log("GET " + req.url);
+    try {
+        if (req.params.foto.indexOf('..') != -1) {
+            console.log("Photo not found");
+            res.status(404).send(err);
+        }
+        console.log("OK");
+        const img = fs.readFileSync("meldungen/" + req.params.foto + ".jpeg");
+
+        res.writeHead(200, {'Content-Type': 'blob' });
+        res.end(img, 'binary');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send(err);
+    }
+})
+
+app.get('/Thumbnails/:foto', async (req, res) => {
+    console.log("GET " + req.url);
+    try {
+        if (req.params.foto.indexOf('..') != -1) {
+            console.log("Photo not found");
+            res.status(404).send(err);
+        }
+        console.log("OK");
+
+        const buffer = await sharp("meldungen/" + req.params.foto + ".jpeg").resize(320).toBuffer();
+
+        res.writeHead(200, {'Content-Type': 'blob' });
+        res.end(buffer, 'binary');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send(err);
+    }
+})
 
 app.get('/testmail', async (req, res) => {
     console.log("GET /testmail");
