@@ -100,7 +100,8 @@ app.get('/Meldungen/:Meldung', async (req, res) => {
         const matchingFiles = files.filter(file => file.startsWith(req.params.Meldung) && file.endsWith(".jpeg"));
         const removedStrings = matchingFiles.map(str => str.slice(0, -5));
 
-        meldung.images = removedStrings;
+	// Auskommentiert, damit Frontend korrekt auf Bilder zugreifen kann
+        // meldung.images = removedStrings;
 
         res.status(200).send(meldung);
     } catch (err) {
