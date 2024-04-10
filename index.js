@@ -38,8 +38,8 @@ app.use(bodyParser.json({limit: '100mb'}));
 const port = process.env.PORT || 4000;
 app.listen(port, () => {
     console.log('Server für SAM-KI-Assistenz');
-    console.log("(c)2023 David Breunig, Fraunhofer IPA");
-    console.log("Beta v0.1.4");
+    console.log("(c)2023, 2024 David Breunig, Fraunhofer IPA");
+    console.log("Beta v0.1.5");
     console.log(`Host-Id: ${hostid}`);
     console.log(`Listener auf ${port}`);
     console.log('PORT als Umgebungsvariable für anderen Port');
@@ -329,15 +329,17 @@ app.post("/send", async (req, res) => {
 
     var timestamp = Date.now();
 
-    let file_content = JSON.stringify({
+    let file_content = {
         //Verantwortliche: req.body.Verantwortliche,
         Zeitstempel: timestamp,
         Abteilungen: req.body.Abteilungen,
         Montageplatz: req.body.Montageplatz,
-        Auftrag: req.body.Auftrag,
-        Baugruppe: req.body.Baugruppe,
-        Grund: req.body.Grund,
-        Text: req.body.Text}, null, "\t");
+        Grund: req.body.Grund
+    };
+
+    var meldung = req.body.Montageplatz + "_" + timestamp + "_" + req.body.Grund;
+    //meldung = meldung.replaceAll(':'|'\\'|'/'|'?'|'*'|'<'|'>'|'\"', "-");
+    meldung = meldung.replaceAll(['\|/<>"*?'], "-");
 
     let msg_content = "";
 
@@ -349,11 +351,49 @@ app.post("/send", async (req, res) => {
         }
     }
 
+    let message = {
+        from: settings.from,
+        subject: 'SAM-KI-Nachricht: Meldung ' + req.body.Grund + " an " + req.body.Montageplatz,
+        attachments:  []
+    };
+
     msg_content += "Montageplatz: " + JSON.stringify(req.body.Montageplatz) + "\n" +
-        "Auftrag: " + JSON.stringify(req.body.Auftrag) + "\n" +
-        "Baugruppe: " + JSON.stringify(req.body.Baugruppe) + "\n" +
-        "Grund: " + JSON.stringify(req.body.Grund) + "\n" +
-        "Text: " + JSON.stringify(req.body.Text);
+        "Grund: " + JSON.stringify(req.body.Grund) + "\n";
+
+    for (let i = 0; i < Object.keys(Ausgangsmodell.Anlagen).length; i++)
+    {
+        const titel = Object.keys(Ausgangsmodell.Anlagen)[i];
+
+        if (req.body.Anlagen.hasOwnProperty(titel))
+        {
+            if (Ausgangsmodell.Anlagen[titel] == 'Text' || Ausgangsmodell.Anlagen[titel] == 'Code')
+            {
+                file_content[titel] = req.body.Anlagen[titel];
+                msg_content += titel + ": " + JSON.stringify(req.body.Anlagen[titel]) + "\n";
+            } else if (Ausgangsmodell.Anlagen[titel] == 'Foto') {
+                try {
+                    let foto = req.body.Anlagen[titel];
+                    var ending = foto.split(";",1)[0].split("/")[1];
+                    let base64Image = foto.split(';base64,').pop();
+                    fs.writeFile('meldungen/' + meldung + "_" + titel + "." + ending, base64Image, {encoding: 'base64'}, function(err) {
+                        console.log('Bild erstellt: ' + titel);
+                    });
+                    message.attachments = [...message.attachments, {
+                        filename: meldung + "_" + titel + "." + ending,
+                        path: foto
+                    }];
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+        } else {
+            if (Ausgangsmodell.Anlagen[titel] == 'Text' || Ausgangsmodell.Anlagen[titel] == 'Code')
+            {
+                file_content[titel] = ""
+                msg_content += titel + ": \n";
+            }
+        }
+    }
 
     if (settings.Hinweistext != undefined)
     {
@@ -364,31 +404,16 @@ app.post("/send", async (req, res) => {
     }
 
     msg_content = msg_content.replaceAll('"', '');
-    
-    var meldung = req.body.Montageplatz + "_" + timestamp + "_" + req.body.Grund;
-    //meldung = meldung.replaceAll(':'|'\\'|'/'|'?'|'*'|'<'|'>'|'\"', "-");
-    meldung = meldung.replaceAll(['\|/<>"*?'], "-");
+
+    message.text = msg_content;
 
     try {
-        fs.writeFile("meldungen/" + meldung + ".json", file_content, function(err) {
+        fs.writeFile("meldungen/" + meldung + ".json", JSON.stringify(file_content, null, "\t"), function(err) {
             console.log("Meldung erstellt: " + meldung);
         });
     } catch (error) {
         console.log(error);
-    }
-
-    if (req.body.hasOwnProperty('Bild'))
-    {
-        try {
-            var ending = req.body.Bild.split(";",1)[0].split("/")[1];
-            let base64Image = req.body.Bild.split(';base64,').pop();
-            fs.writeFile('meldungen/' + meldung + "." + ending, base64Image, {encoding: 'base64'}, function(err) {
-                console.log('Bild erstellt');
-            });
-        } catch (error) {
-            console.log(error);
-        }
-    }
+    }    
 
     if (req.body.hasOwnProperty('Video'))
     {
@@ -405,69 +430,19 @@ app.post("/send", async (req, res) => {
 
     for (const Ziel of Ziele_erstellt)
     {
-        console.log("Ziel: " + String(Ziel));
-
-        let message = {
-            from: settings.from,
-            to: Ziel,
-            subject: 'SAM-KI-Nachricht: Meldung ' + req.body.Grund + " an " + req.body.Montageplatz,
-            text: msg_content
-        };
-
-        console.log("message: " + JSON.stringify(message));
-
-        message.attachments = [];
-
-        /*try {
-            message.attachments = [{
-                filename: meldung + ".json",
-                path: "meldungen/" + meldung + ".json"
-            }];
-        } catch {
-            console.log('Konnte Meldung nicht anhängen.');
-        }*/
-
-        if (req.body.hasOwnProperty('Bild'))
-        {
-            try
-            {
-                var ending = req.body.Bild.split(";",1)[0].split("/")[1];
-                message.attachments = [...message.attachments, {
-                    filename: meldung + "." + ending,
-                    path: req.body.Bild
-                }];
-            } catch {
-                console.log('Konnte Bild nicht anhängen.');
-            }
-        }
-
-        if (req.body.hasOwnProperty('Video'))
-        {
-            try
-            {
-                var ending = req.body.Bild.split(";",1)[0].split("/")[1];
-                message.attachments = [...message.attachments, {
-                    filename: meldung + "." + ending,
-                    path: req.body.Video
-                }];
-            } catch {
-                console.log('Konnte Video nicht anhängen.');
-            }
-        }
-
+        console.log("Ziel: " + String(Ziel));        
+    
         transporter.sendMail(message, (err, info) => {
             if (err) {
                 console.log('Fehler beim Mailsenden: ' + err.message);
-                res.status(500).send(err.message);
-                return;
+                //res.status(500).send(err.message);
             } else {
                 console.log('Mail versendet: %s', info.messageId);
-                res.status(200).send('OK');
-                return;
             }
         });
     }
-    res.status(200).send('OK');   
+
+    res.status(200).send('OK');
 });
 
 function getValuesAsArray(dict) {
