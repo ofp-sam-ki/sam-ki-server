@@ -358,7 +358,7 @@ app.post("/send", async (req, res) => {
     };
 
     msg_content += "Montageplatz: " + JSON.stringify(req.body.Montageplatz) + "\n" +
-        "Grund: " + JSON.stringify(req.body.Grund) + "\n";
+        "Grund: " + JSON.stringify(req.body.Grund).replaceAll('[', '').replaceAll(']', '').replaceAll(',', ', ') + "\n";
 
     for (let i = 0; i < Object.keys(Ausgangsmodell.Anlagen).length; i++)
     {
@@ -430,7 +430,9 @@ app.post("/send", async (req, res) => {
 
     for (const Ziel of Ziele_erstellt)
     {
-        console.log("Ziel: " + String(Ziel));        
+        console.log("Ziel: " + String(Ziel));     
+        
+        message.to = Ziel;
     
         transporter.sendMail(message, (err, info) => {
             if (err) {
