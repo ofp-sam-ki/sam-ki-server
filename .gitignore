@@ -12,3 +12,5 @@ package-lock.json
 index-linux
 index-macos
 index-win.exe
+Modelle/
+hostid.json
